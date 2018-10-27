@@ -26,7 +26,9 @@ type State =
 // ----------------------------------------------------------------------------
 
 let update msg state = 
-  state, Cmd.Empty
+  match msg with
+  | UpdateValue (pos, value) -> { state with Cells = Map.add pos value state.Cells}, Cmd.Empty
+  | _ ->  state, Cmd.Empty
 
 // ----------------------------------------------------------------------------
 // RENDERING
@@ -35,7 +37,7 @@ let update msg state =
 let renderEditor trigger pos value =
   td [ Class "selected"] [ 
     input [
-      OnInput (fun e -> Browser.window.alert(e.target?value))
+      OnInput (fun e -> trigger (UpdateValue (pos, e.target?value)))
       Value value ]
   ]
 
@@ -45,10 +47,12 @@ let renderView trigger pos (value:option<_>) =
     [ str (Option.defaultValue "#ERR" value) ]
 
 let renderCell trigger pos state =
+  let value = defaultArg (Map.tryFind pos state.Cells) ""
+
   if pos = ('A', 1) then
-    renderEditor trigger pos "!"
+    renderEditor trigger pos value
   else
-    renderView trigger pos (Some "?")
+    renderView trigger pos (Some value)
 
 let view state trigger =
   let empty = td [] []

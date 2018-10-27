@@ -15,11 +15,13 @@ open Evaluator
 
 type Event =
   | UpdateValue of Position * string
+  | StartEdit of Position
 
 type State =
   { Rows : int list
     Cols : char list
-    Cells : Map<Position, string> }
+    Cells : Map<Position, string> 
+    Active: Position option }
 
 // ----------------------------------------------------------------------------
 // EVENT HANDLING
@@ -28,7 +30,7 @@ type State =
 let update msg state = 
   match msg with
   | UpdateValue (pos, value) -> { state with Cells = Map.add pos value state.Cells}, Cmd.Empty
-  | _ ->  state, Cmd.Empty
+  | StartEdit pos -> { state with Active = Some pos }, Cmd.Empty
 
 // ----------------------------------------------------------------------------
 // RENDERING
@@ -43,13 +45,13 @@ let renderEditor trigger pos value =
 
 let renderView trigger pos (value:option<_>) = 
   td 
-    [ Style (if value.IsNone then [Background "#ffb0b0"] else [Background "white"]) ] 
+    [ Style (if value.IsNone then [Background "#ffb0b0"] else [Background "white"]); OnClick (fun _ -> (trigger (StartEdit pos)))] 
     [ str (Option.defaultValue "#ERR" value) ]
 
 let renderCell trigger pos state =
   let value = defaultArg (Map.tryFind pos state.Cells) ""
 
-  if pos = ('A', 1) then
+  if Some pos = state.Active then
     renderEditor trigger pos value
   else
     renderView trigger pos (Some value)
@@ -83,7 +85,8 @@ let view state trigger =
 let initial () = 
   { Cols = ['A' .. 'K']
     Rows = [1 .. 15]
-    Cells = Map.empty },
+    Cells = Map.empty
+    Active = None },
   Cmd.Empty    
  
 Program.mkProgram initial update view
